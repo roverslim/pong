@@ -1,6 +1,4 @@
 defmodule Pong.Renderer do
-  def render_game(_linear_interpolator) do
-    IO.inspect "rendering..."
-    :timer.sleep 5
+  def render_game(_game, _linear_interpolator) do
   end
 end
