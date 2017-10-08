@@ -1,3 +1,4 @@
+[![Build Status](https://semaphoreci.com/api/v1/roverslim/pong/branches/master/shields_badge.svg)](https://semaphoreci.com/roverslim/pong)
 # Pong
 
 **TODO: Add description**
