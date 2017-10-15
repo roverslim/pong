@@ -1,126 +1,116 @@
 defmodule Pong.Physics do
-  def update(game) do
-    game = move_ball(game)
-    game = increment_score(game)
-    game
+  alias Pong.Ball
+  alias Pong.Score
+
+  def update(%{ball: ball} = game) do
+    ball = Ball.move(ball)
+
+    game = resolve_collisions(%{game | ball: ball})
+    increment_score game
   end
 
-  defp increment_score(game) do
+  defp increment_score(%{arena: arena, ball: ball, scores: scores} = game) do
     cond do
       ball_crossed_left_goalline?(game) ->
-        game = increment_score_right(game)
-        reset_ball game
+        scores = Score.increment_right(scores)
+        ball = Ball.update_position(ball, arena.center)
+        %{game | ball: ball, scores: scores}
       ball_crossed_right_goalline?(game) ->
-        game = increment_score_left(game)
-        reset_ball game
+        scores = Score.increment_left(scores)
+        %{game | ball: ball, scores: scores}
       true ->
         game
     end
   end
 
-  defp reset_ball(%{arena: arena, ball: ball} = game) do
-    # TODO: randomize direction
-    ball = %{ball | position: arena.center}
-    %{game | ball: ball}
-  end
-
-  defp increment_score_left(%{scores: scores} = game) do
-    scores = %{scores | left: scores.left + 1}
-    %{game | scores: scores}
-  end
-
-  defp increment_score_right(%{scores: scores} = game) do
-    scores = %{scores | right: scores.right + 1}
-    %{game | scores: scores}
-  end
-
   defp ball_crossed_left_goalline?(%{arena: arena, ball: ball} = _game) do
-    %{position: position} = ball
-    position.x <= arena.left_goalline
+    ball.position.x <= arena.left_goalline
   end
 
   defp ball_crossed_right_goalline?(%{arena: arena, ball: ball} = _game) do
-    %{position: position} = ball
-    position.x >= arena.right_goalline
-  end
-
-  defp move_ball(%{ball: ball} = game) do
-    %{position: position, direction: direction} = ball
-
-    position = %{
-      x: position.x + direction.x,
-      y: position.y + direction.y,
-    }
-    ball = %{ball | position: position}
-    game = %{game | ball: ball}
-    resolve_collisions game
+    ball.position.x >= arena.right_goalline
   end
 
   defp resolve_collisions(game) do
     cond do
-      collison_with_wall?(game) ->
-        ball = rebound_ball_off_wall(game)
-        resolve_collisions %{game | ball: ball}
-      collision_with_left_paddle?(game) or collision_with_right_paddle?(game) ->
-        ball = rebound_ball_off_paddle(game)
-        resolve_collisions %{game | ball: ball}
+      collision_with_top_wall?(game) ->
+        game = rebound_ball_off_top_wall(game)
+        resolve_collisions game
+      collison_with_bottom_wall?(game) ->
+        game = rebound_ball_off_bottom_wall(game)
+        resolve_collisions game
+      collision_with_left_paddle?(game) ->
+        game = rebound_ball_off_left_paddle(game)
+        resolve_collisions game
+      collision_with_right_paddle?(game) ->
+        game = rebound_ball_off_right_paddle(game)
+        resolve_collisions game
       true ->
         game
     end
   end
 
-  defp collision_with_left_paddle?(%{arena: arena, ball: ball, paddles: paddles} = _game) do
-    %{position: position} = ball
-
-    position.x <= arena.left_goalline and
-      paddles.y_left <= position.y and
-      position.y <= paddles.y_left + paddles.paddle_length
+  defp collision_with_left_paddle?(game) do
+    ball_reached_left_goalline?(game) and
+      ball_is_aligned_with_left_paddle?(game)
   end
 
-  defp collision_with_right_paddle?(%{arena: arena, ball: ball, paddles: paddles} = _game) do
-    %{position: position} = ball
-
-    position.x >= arena.right_goalline and
-      paddles.y_right <= position.y and
-      position.y <= paddles.y_right + paddles.paddle_length
+  defp ball_reached_left_goalline?(%{arena: arena, ball: ball} = _game) do
+    ball.position.x <= arena.left_goalline
   end
 
-  defp collison_with_wall?(%{arena: arena, ball: ball} = _game) do
-    %{position: position} = ball
-
-    position.y <= arena.bottom_wall or
-      position.y >= arena.top_wall
+  defp ball_is_aligned_with_left_paddle?(%{ball: ball, paddles: paddles} = _game) do
+    paddles.y_left <= ball.position.y and
+      ball.position.y <= paddles.y_left + paddles.paddle_length
   end
 
-  defp rebound_ball_off_wall(%{arena: arena, ball: ball} = _game) do
-    %{position: position, direction: direction} = ball
-
-    new_y = cond do
-      position.y <= arena.bottom_wall ->
-        arena.bottom_wall + 1
-      position.y >= arena.top_wall ->
-        arena.top_wall - 1
-    end
-    new_position = %{position | y: new_y}
-
-    new_direction = %{direction | y: -direction.y}
-
-    %{ball | position: new_position, direction: new_direction}
+  defp collision_with_right_paddle?(game) do
+    ball_reached_right_goalline?(game) and
+      ball_is_aligned_with_right_paddle?(game)
   end
 
-  defp rebound_ball_off_paddle(%{arena: arena, ball: ball} = _game) do
-    %{position: position, direction: direction} = ball
+  defp ball_reached_right_goalline?(%{arena: arena, ball: ball} = _game) do
+    ball.position.x >= arena.right_goalline
+  end
 
-    new_x = cond do
-      position.x <= arena.left_goalline ->
-        arena.left_goalline + 1
-      position.x >= arena.right_goalline ->
-        arena.right_goalline - 1
-    end
-    new_position = %{position | x: new_x}
+  defp ball_is_aligned_with_right_paddle?(%{ball: ball, paddles: paddles} = _game) do
+    paddles.y_right <= ball.position.y and
+      ball.position.y <= paddles.y_right + paddles.paddle_length
+  end
 
-    new_direction = %{direction | x: -direction.x}
+  defp collision_with_top_wall?(%{arena: arena, ball: ball} = _game) do
+    ball.position.y >= arena.top_wall
+  end
 
-    %{ball | position: new_position, direction: new_direction}
+  defp collison_with_bottom_wall?(%{arena: arena, ball: ball} = _game) do
+    ball.position.y <= arena.bottom_wall
+  end
+
+  defp rebound_ball_off_top_wall(%{arena: arena, ball: ball} = game) do
+    new_position = %{y: arena.top_wall - 1}
+    ball = Ball.update_position(ball, new_position)
+    ball = Ball.inverse_y_direction(ball)
+    %{game | ball: ball}
+  end
+
+  defp rebound_ball_off_bottom_wall(%{arena: arena, ball: ball} = game) do
+    new_position = %{y: arena.bottom_wall + 1}
+    ball = Ball.update_position(ball, new_position)
+    ball = Ball.inverse_y_direction(ball)
+    %{game | ball: ball}
+  end
+
+  defp rebound_ball_off_left_paddle(%{arena: arena, ball: ball} = game) do
+    new_position = %{x: arena.left_goalline + 1}
+    ball = Ball.update_position(ball, new_position)
+    ball = Ball.inverse_x_direction(ball)
+    %{game | ball: ball}
+  end
+
+  defp rebound_ball_off_right_paddle(%{arena: arena, ball: ball} = game) do
+    new_position = %{x: arena.right_goalline - 1}
+    ball = Ball.update_position(ball, new_position)
+    ball = Ball.inverse_x_direction(ball)
+    %{game | ball: ball}
   end
 end
