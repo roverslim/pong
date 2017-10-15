@@ -17,6 +17,7 @@ defmodule Pong.Physics do
         %{game | ball: ball, scores: scores}
       ball_crossed_right_goalline?(game) ->
         scores = Score.increment_left(scores)
+        ball = Ball.update_position(ball, arena.center)
         %{game | ball: ball, scores: scores}
       true ->
         game

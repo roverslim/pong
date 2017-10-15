@@ -200,6 +200,14 @@ defmodule Pong.PhysicsTest do
     assert %{left: 1, right: 0} == scores
   end
 
+  test "#update centers the ball when it attains the right goalline" do
+    game = new_game()
+    game = setup_ball_position(game, %{x: 399, y: 5})
+
+    game = Physics.update(game)
+    assert %{x: 200, y: 150} == game.ball.position
+  end
+
   test "#update increments the right score by 1 when the ball attains the left goalline" do
     game = new_game()
     game = setup_ball_position(game, %{x: 1, y: 5})
@@ -207,6 +215,15 @@ defmodule Pong.PhysicsTest do
 
     %{scores: scores} = Physics.update(game)
     assert %{left: 0, right: 1} == scores
+  end
+
+  test "#update centers the ball when it attains the left goalline" do
+    game = new_game()
+    game = setup_ball_position(game, %{x: 1, y: 5})
+    game = setup_ball_direction(game, %{x: -1, y: 0})
+
+    game = Physics.update(game)
+    assert %{x: 200, y: 150} == game.ball.position
   end
 
   defp setup_ball_position(game, new_position) do
