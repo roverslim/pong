@@ -1,6 +1,7 @@
 defmodule Pong.PhysicsTest do
   use ExUnit.Case, async: true
   alias Pong.Physics
+  import Pong.TestHelper
 
   test "#update moves ball to rightwards" do
     game = new_game()
@@ -224,39 +225,5 @@ defmodule Pong.PhysicsTest do
 
     game = Physics.update(game)
     assert %{x: 200, y: 150} == game.ball.position
-  end
-
-  defp setup_ball_position(game, new_position) do
-    %{ball: ball} = game
-    new_ball = %{ball | position: Map.merge(ball.position, new_position)}
-    %{game | ball: new_ball}
-  end
-
-  defp setup_ball_direction(game, new_direction) do
-    %{ball: ball} = game
-    new_ball = %{ball | direction: Map.merge(ball.direction, new_direction)}
-    %{game | ball: new_ball}
-  end
-
-  defp setup_paddles(game, new_paddles) do
-    %{game | paddles: Map.merge(game.paddles, new_paddles)}
-  end
-
-  defp new_game do
-    %{
-      arena: %{
-        bottom_wall: 0,
-        center: %{x: 200, y: 150},
-        top_wall: 300,
-        left_goalline: 0,
-        right_goalline: 400,
-      },
-      ball: %{
-        position: %{x: 200, y: 150},
-        direction: %{x: 1, y: 0},
-      },
-      paddles: %{paddle_length: 10, y_left: 145, y_right: 145},
-      scores: %{left: 0, right: 0},
-    }
   end
 end
